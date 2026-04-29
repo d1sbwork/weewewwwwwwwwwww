@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Casino</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #0c1a2d 0%, #152642 50%, #0c1a2d 100%);
+            color: white;
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Анимированный снежный фон - УМЕНЬШЕН */
+        .snow-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .snowflake {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            opacity: 0.7;
+            animation-name: fall;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-10px) rotate(0deg);
+                opacity: 0.7;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Основной контейнер */
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Верхняя панель с уведомлениями о подарках */
+        .live-notifications {
+            background: linear-gradient(90deg, #dc2626 0%, #ef4444 50%, #dc2626 100%);
+            border-radius: 0 0 25px 25px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            border-bottom: 3px solid #fbbf24;
+        }
+
+        .live-notifications.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            margin-bottom: 0;
+            padding: 0;
+            height: 0;
+        }
+
+        .live-notifications::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            animation: shine 2s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .live-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .live-header h2 {
+            font-size: 22px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(90deg, #ffffff, #fef3c7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
+            padding: 5px 15px;
+            border-radius: 50px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .live-pulse {
+            width: 14px;
+            height: 14px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff;
+        }
+
+        @keyframes pulse {
+            0% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff;
+            }
+            50% { 
+                opacity: 0.7; 
+                transform: scale(1.2);
+                box-shadow: 0 0 15px #ffffff, 0 0 30px #ffffff;
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1);
+                box-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff;
+            }
+        }
+
+        .gift-scroll-container {
+            overflow-x: auto;
+            white-space: nowrap;
+            padding-bottom: 8px;
+        }
+
+        .gift-scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .gift-scroll-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .gift-scroll-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            border-radius: 10px;
+        }
+
+        .gift-list {
+            display: inline-flex;
+            gap: 15px;
+        }
+
+        .gift-item {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            padding: 12px 15px;
+            border-radius: 15px;
+            min-width: 160px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .gift-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .gift-icon {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #78350f;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 20px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        .gift-info {
+            flex-grow: 1;
+        }
+
+        .gift-name {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 3px;
+            color: #fef3c7;
+        }
+
+        .gift-from {
+            font-size: 13px;
+            opacity: 0.9;
+            color: #ffffff;
+        }
+
+        /* Основное меню */
+        .main-menu {
+            flex-grow: 1;
+            padding: 0 25px 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: 100%;
+        }
+
+        .menu-buttons {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            position: relative;
+            z-index: 1;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        .menu-button {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+            border: 3px solid rgba(251, 191, 36, 0.4);
+            border-radius: 25px;
+            color: white;
+            font-size: 36px;
+            font-weight: 900;
+            padding: 40px 25px;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.4s ease;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        .menu-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.7s ease;
+        }
+
+        .menu-button:hover::before {
+            left: 100%;
+        }
+
+        .menu-button:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border-color: rgba(251, 191, 36, 0.6);
+        }
+
+        .menu-button:active {
+            transform: translateY(-3px) scale(1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        .menu-button.cases {
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            border-color: rgba(124, 58, 237, 0.6);
+        }
+
+        .menu-button.shop {
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+            border-color: rgba(14, 165, 233, 0.6);
+        }
+
+        /* Нижняя навигационная панель - СДВИНУТА ВЛЕВО */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(12, 26, 45, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 2px solid rgba(251, 191, 36, 0.3);
+            display: flex;
+            justify-content: space-between; /* Изменено с space-around */
+            padding: 15px 5px 15px 10px; /* Увеличено слева */
+            z-index: 100;
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .bottom-nav::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+        }
+
+        .nav-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            padding: 10px 8px; /* Уменьшено справа */
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            outline: none !important;
+            position: relative;
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Специальные стили для крайних кнопок */
+        .nav-button:first-child {
+            margin-left: 0;
+        }
+
+        .nav-button:last-child {
+            margin-right: 5px; /* Немного смещена вправо последняя */
+        }
+
+        .nav-button:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        /* ИЗМЕНЕНО: при нажатии на кейсы красится желтым и иконка и название */
+        .nav-button.active {
+            color: #fbbf24 !important;
+            background-color: rgba(251, 191, 36, 0.15);
+            transform: translateY(-5px);
+        }
+
+        .nav-button.active i {
+            color: #fbbf24 !important;
+            transform: scale(1.2);
+        }
+
+        .nav-button i {
+            font-size: 22px;
+            margin-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button.cases i {
+            color: #a78bfa;
+        }
+
+        .nav-button.cases.active i {
+            color: #fbbf24 !important;
+        }
+
+        .nav-button.cases {
+            color: #a78bfa;
+        }
+
+        .nav-button.cases.active {
+            color: #fbbf24 !important;
+        }
+
+        /* Страницы контента (скрыты по умолчанию) */
+        .page {
+            display: none;
+            padding: 25px;
+            padding-bottom: 90px;
+            flex-grow: 1;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 900;
+            margin-bottom: 30px;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+            letter-spacing: 1px;
+        }
+
+        .page-content {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+            border-radius: 25px;
+            padding: 30px;
+            border: 2px solid rgba(251, 191, 36, 0.2);
+            backdrop-filter: blur(15px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .page-content p {
+            font-size: 18px;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+            text-align: center;
+        }
+
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 500px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            .live-notifications {
+                border-radius: 0 0 20px 20px;
+                padding: 15px;
+            }
+            
+            .menu-button {
+                padding: 35px 20px;
+                font-size: 30px;
+            }
+            
+            .page-title {
+                font-size: 28px;
+            }
+            
+            .page-content {
+                padding: 25px;
+            }
+            
+            .gift-item {
+                min-width: 140px;
+                padding: 10px 12px;
+            }
+            
+            .main-menu {
+                padding: 0 20px 80px;
+            }
+            
+            .menu-buttons {
+                max-width: 100%;
+                padding: 0;
+            }
+            
+            /* Уменьшаем паддинги на мобильных */
+            .bottom-nav {
+                padding: 12px 3px 12px 8px;
+            }
+            
+            .nav-button {
+                padding: 8px 5px;
+                font-size: 12px;
+            }
+            
+            .nav-button i {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .menu-button {
+                padding: 30px 15px;
+                font-size: 26px;
+            }
+            
+            .page-title {
+                font-size: 24px;
+            }
+            
+            .page-content {
+                padding: 20px;
+            }
+            
+            .live-header h2 {
+                font-size: 18px;
+            }
+            
+            .bottom-nav {
+                padding: 10px 2px 10px 6px;
+            }
+            
+            .nav-button {
+                padding: 6px 3px;
+                font-size: 11px;
+            }
+            
+            .nav-button i {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Анимированный снег - УМЕНЬШЕННОЕ КОЛИЧЕСТВО -->
+    <div class="snow-background" id="snowflakes-container"></div>
+
+    <div class="container">
+        <!-- Верхняя панель с уведомлениями LIVE -->
+        <div class="live-notifications" id="live-notifications">
+            <div class="live-header">
+                <h2>
+                    <span class="live-pulse"></span>
+                    LIVE WIN
+                </h2>
+            </div>
+            <div class="gift-scroll-container">
+                <div class="gift-list" id="gift-list">
+                    <!-- Сгенерированные подарки будут здесь -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Главное меню (отображается по умолчанию) -->
+        <div class="main-menu" id="main-menu">
+            <div class="menu-buttons">
+                <a href="#" class="menu-button cases" data-page="cases">КЕЙСЫ</a>
+                <a href="#" class="menu-button shop" data-page="shop">МАГАЗИН</a>
+            </div>
+        </div>
+
+        <!-- Страница Кейсы -->
+        <div class="page" id="cases-page">
+            <h2 class="page-title">КЕЙСЫ</h2>
+            <p class="section-subtitle">Кейсы</p>
+                    <div class="cases-grid">
+                        <div class="case-card" onclick="openCasePage('free')">
+                            <div class="case-box case-box-image" style="background-image: url('images/everyday_case.png.jpg');">
+                                <div class="case-icon" style="display: none;">📦</div>
+                            </div>
+                            <div class="case-name">Free case</div>
+                            <div class="case-price">Бесплатно</div>
+                        </div>
+                        <div class="case-card" onclick="openCasePage('newyear')">
+                            <div class="case-box case-box-image" style="background-image: url('images/newyear_case.png.jpg');">
+                                <div class="case-icon" style="display: none;">🎄</div>
+                            </div>
+                            <div class="case-name">NewYear case</div>
+                            <div class="case-price">50 ⭐</div>
+                        </div>
+                        <div class="case-card" onclick="openCasePage('crypto')">
+                            <div class="case-box case-box-image" style="background-image: url('images/crypto_case.png.jpg');">
+                                <div class="case-icon" style="display: none;">₿</div>
+                            </div>
+                            <div class="case-name">Crypto case</div>
+                            <div class="case-price">100 ⭐</div>
+                        </div>
+                        <div class="case-card" onclick="openCasePage('onlynft')">
+                            <div class="case-box">
+                                <div class="case-icon">🎨</div>
+                            </div>
+                            <div class="case-name">ONLY NFT case</div>
+                            <div class="case-price">200 ⭐</div>
+                        </div>
+                        <div class="case-card" onclick="openCasePage('genesis')">
+                            <div class="case-box case-box-image" style="background-image: url('images/webappimagesgenesis_case.png.jpg');">
+                                <div class="case-icon" style="display: none;">⭐</div>
+                            </div>
+                            <div class="case-name">Genesis case</div>
+                            <div class="case-price">500 ⭐</div>
+                        </div>
+                        <div class="case-card" onclick="openCasePage('elite')">
+                            <div class="case-box case-box-image" style="background-image: url('images/elite_case.png.jpg');">
+                                <div class="case-icon" style="display: none;">👑</div>
+                            </div>
+                            <div class="case-name">Elite case</div>
+                            <div class="case-price">1000 ⭐</div>
+                        </div>
+                         <!-- Страница кейса -->
+            <div class="section" id="casePageSection">
+                <div class="case-page-content">
+                    <button class="back-btn" onclick="backToCases()">← Назад</button>
+                    <div class="case-page-header">
+                        <div class="case-page-icon" id="casePageIcon">📦</div>
+                        <h2 class="case-page-title" id="casePageTitle">Free case</h2>
+                        <div class="case-page-price" id="casePagePrice">Бесплатно</div>
+                    </div>
+                    
+                    <!-- Линия прокрутки подарков -->
+                    <div class="case-spinner-line" id="caseSpinnerLine">
+                        <div class="spinner-center-line-vertical"></div>
+                        <div class="case-spinner-items" id="caseSpinnerItems">
+                            <!-- Подарки будут добавлены динамически -->
+                        </div>
+                    </div>
+                    
+                    <button class="spin-btn" id="spinBtn" onclick="spinCase()">
+                        <span class="spin-btn-text">Прокрутить</span>
+                    </button>
+                    
+                    <div class="case-rewards">
+                        <h3 class="rewards-title">Возможные награды:</h3>
+                        <div class="rewards-list" id="rewardsList">
+                            <!-- Подарки будут добавлены динамически -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <!-- Страница Магазин -->
+        <div class="page" id="shop-page">
+            <h2 class="page-title">МАГАЗИН</h2>
+            <div class="page-content">
+                <p>Новогодние предложения и специальные праздничные наборы!</p>
+                <p>Уникальные товары только в праздничный сезон.</p>
+                <p>Сделайте праздник еще ярче с нашими специальными предложениями!</p>
+            </div>
+        </div>
+
+        <!-- Нижняя навигационная панель -->
+        <nav class="bottom-nav">
+            <button class="nav-button" data-page="rating">
+                <i class="fas fa-chart-line"></i>
+                <span>Рейтинг</span>
+            </button>
+            <button class="nav-button" data-page="quests">
+                <i class="fas fa-tasks"></i>
+                <span>Квесты</span>
+            </button>
+            <button class="nav-button active cases" data-page="cases" id="nav-cases">
+                <i class="fas fa-gift"></i>
+                <span>Кейсы</span>
+            </button>
+            <button class="nav-button" data-page="shop">
+                <i class="fas fa-store"></i>
+                <span>Магазин</span>
+            </button>
+            <button class="nav-button" data-page="profile">
+                <i class="fas fa-user"></i>
+                <span>Профиль</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        // Генерация снежинок - УМЕНЬШЕННОЕ КОЛИЧЕСТВО
+        function createSnowflakes() {
+            const container = document.getElementById('snowflakes-container');
+            const snowflakeCount = 40; // Уменьшено с 120 до 40
+            
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                
+                // Случайные параметры снежинок
+                const size = Math.random() * 4 + 2; // Уменьшен размер
+                const startX = Math.random() * 100;
+                const duration = Math.random() * 8 + 8; // Уменьшена длительность
+                const delay = Math.random() * 5;
+                
+                snowflake.style.width = `${size}px`;
+                snowflake.style.height = `${size}px`;
+                snowflake.style.left = `${startX}vw`;
+                snowflake.style.animationDuration = `${duration}s`;
+                snowflake.style.animationDelay = `${delay}s`;
+                
+                // Случайная яркость
+                snowflake.style.opacity = Math.random() * 0.4 + 0.3; // Уменьшена яркость
+                
+                container.appendChild(snowflake);
+            }
+        }
+
+        // Генерация списка подарков
+        function generateGifts() {
+            const giftList = document.getElementById('gift-list');
+            const giftTypes = [
+                { name: "Новогодний Стикерпак", icon: "snowflake", color: "#3b82f6", from: "Telegram" },
+                { name: "Праздничные Эмодзи", icon: "star", color: "#fbbf24", from: "Канал #1" },
+                { name: "Подарочный Premium", icon: "crown", color: "#fbbf24", from: "Друг" },
+                { name: "Новогодняя Гифка", icon: "gift", color: "#ef4444", from: "Группа" },
+                { name: "Праздничное Видео", icon: "video", color: "#10b981", from: "Канал #2" },
+                { name: "Рождественская Музыка", icon: "music", color: "#8b5cf6", from: "Бот" },
+                { name: "Специальный Набор", icon: "box", color: "#f59e0b", from: "Админ" },
+                { name: "Зимние Обои", icon: "image", color: "#0ea5e9", from: "Канал #3" },
+            ];
+            
+            // Создаем подарки
+            for (let i = 0; i < 8; i++) {
+                const gift = giftTypes[i];
+                const giftItem = document.createElement('div');
+                giftItem.className = 'gift-item';
+                
+                giftItem.innerHTML = `
+                    <div class="gift-icon" style="background: linear-gradient(135deg, ${gift.color}, ${gift.color}99)">
+                        <i class="fas fa-${gift.icon}"></i>
+                    </div>
+                    <div class="gift-info">
+                        <div class="gift-name">${gift.name}</div>
+                        <div class="gift-from">от ${gift.from}</div>
+                    </div>
+                `;
+                
+                giftList.appendChild(giftItem);
+            }
+        }
+
+        // Навигация между страницами
+        function setupNavigation() {
+            const mainMenu = document.getElementById('main-menu');
+            const liveNotifications = document.getElementById('live-notifications');
+            const navButtons = document.querySelectorAll('.nav-button, .menu-button');
+            const pages = document.querySelectorAll('.page');
+            
+            // Флаг для отслеживания первого клика
+            let isFirstClick = true;
+            
+            // Функция скрытия LIVE уведомлений
+            function hideLiveNotifications() {
+                liveNotifications.classList.add('hidden');
+            }
+            
+            // Функция переключения страниц
+            function switchPage(pageId) {
+                // Скрыть главное меню
+                mainMenu.style.display = 'none';
+                
+                // При первом клике скрываем LIVE уведомления
+                if (isFirstClick) {
+                    hideLiveNotifications();
+                    isFirstClick = false;
+                }
+                
+                // Скрыть все страницы
+                pages.forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                // Показать выбранную страницу
+                const activePage = document.getElementById(`${pageId}-page`);
+                if (activePage) {
+                    activePage.classList.add('active');
+                }
+                
+                // Обновить активную кнопку в навигации
+                navButtons.forEach(button => {
+                    button.classList.remove('active');
+                });
+                
+                // Активировать соответствующую кнопку в нижней панели
+                const navButton = document.querySelector(`.nav-button[data-page="${pageId}"]`);
+                if (navButton) {
+                    navButton.classList.add('active');
+                }
+                
+                // Особый стиль для кнопки Кейсы - желтый цвет и иконки и текста
+                if (pageId === 'cases') {
+                    const casesButton = document.getElementById('nav-cases');
+                    casesButton.classList.add('cases', 'active');
+                    // Явно устанавливаем желтый цвет
+                    casesButton.style.color = '#fbbf24';
+                    casesButton.querySelector('i').style.color = '#fbbf24';
+                }
+            }
+            
+            // Обработчики для кнопок навигации
+            navButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pageId = this.getAttribute('data-page');
+                    if (pageId) {
+                        switchPage(pageId);
+                    }
+                });
+            });
+            
+            // Кнопка "Кейсы" в нижней панели активна по умолчанию
+            const casesButton = document.getElementById('nav-cases');
+            casesButton.classList.add('active', 'cases');
+            casesButton.style.color = '#fbbf24';
+            casesButton.querySelector('i').style.color = '#fbbf24';
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            createSnowflakes();
+            generateGifts();
+            setupNavigation();
+            
+            // Убираем синюю обводку при клике на кнопки
+            document.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
+                    e.target.blur();
+                }
+            });
+            
+            // Убираем обводку при фокусе на кнопках
+            const buttons = document.querySelectorAll('button, a');
+            buttons.forEach(button => {
+                button.addEventListener('focus', function() {
+                    this.style.outline = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
